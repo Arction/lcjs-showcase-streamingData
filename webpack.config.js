@@ -31,8 +31,7 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({
-            title: 'LCJS Trading Chart',
-            template: './src/index.html'
+            title: 'LCJS Trading Chart'
         })
     ]
 }
