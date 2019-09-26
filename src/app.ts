@@ -16,6 +16,7 @@ const channelGap = 0.2
 
 // Create Chart.
 const chart = lightningChart().ChartXY({
+    containerId: 'chart-container',
     defaultAxisXTickStrategy: AxisTickStrategies.Numeric
 })
     // Hide title.
