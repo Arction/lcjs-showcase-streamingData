@@ -31,7 +31,8 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({
-            title: 'LCJS streaming data showcase'
+            title: 'LCJS streaming data showcase',
+            template: './src/index.html'
         })
     ]
 }
