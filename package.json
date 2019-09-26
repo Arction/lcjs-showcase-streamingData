@@ -12,6 +12,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "gulp": "^4.0.2",
+    "showdown": "^1.9.0",
     "copy-webpack-plugin": "^5.0.4",
     "gh-pages": "^2.1.1",
     "html-webpack-plugin": "^3.2.0",
@@ -23,8 +25,6 @@
   },
   "dependencies": {
     "@arction/lcjs": "^1.0.0",
-    "@arction/xydata": "^1.0.1",
-    "gulp": "^4.0.2",
-    "showdown": "^1.9.0"
+    "@arction/xydata": "^1.0.1"
   }
 }
