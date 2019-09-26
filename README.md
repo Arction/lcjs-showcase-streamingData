@@ -4,6 +4,12 @@ Web-application that streams random data in great quantity across multiple chann
 
 More information about LightningChart<sup>&#174;</sup> JS can be found from our website, https://www.arction.com/lightningchart-js/.
 
+## Description
+
+Scrolling of large quantitities of random data in real-time, across multiple channels.
+
+Rendered frames-per-second (FPS) and incoming data points-per-second (PPS) are displayed on Chart.
+
 ## Getting Started
 
 The application is hosted at:
@@ -17,7 +23,7 @@ To run the application locally with hot reload:
 3. Run `npm start`
 4. Open browser and navigate to http://localhost:8080
 
-### Support
+## Support
 
 If you notice an error in the example code, please open an issue on [GitHub][0].
 
