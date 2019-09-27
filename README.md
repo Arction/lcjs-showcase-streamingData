@@ -1,4 +1,4 @@
-# LightningChart<sup>&#174;</sup>JS Streaming data showcase application
+# LightningChart JS Streaming data showcase application
 
 Web-application that streams random data in great quantity across multiple channels, and renders it using LightningChart JS.
 
