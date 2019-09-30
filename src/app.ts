@@ -106,7 +106,7 @@ series.forEach(( series ) => series.setResultTableFormatter( resultTableFormatte
 
 // Create indicators for points-per-second and frames-per-second.
 const indicatorLayout = chart.addUIElement(
-    UILayoutBuilders.Row
+    UILayoutBuilders.Column
         .setBackground( UIBackgrounds.Rectangle ),
     // Position UIElement with Axis coordinates.
     {
@@ -126,15 +126,17 @@ axisX.onScaleChange(( start, end ) => {
     indicatorLayout.setPosition({ x: start, y: axisY.scale.getInnerEnd() })
 })
 // FPS indicator.
+const fpsPrefix = 'Rendering frames-per-second (FPS)'
 const indicatorFPS = indicatorLayout.addElement( UIElementBuilders.TextBox )
-    .setText('FPS')
+    .setText(fpsPrefix)
     .setFont(( font ) => font
         .setWeight( 'bold' )
     )
 
 // PPS indicator.
+const ppsPrefix = 'Incoming data, at rate of points-per-second (PPS)'
 const indicatorPPS = indicatorLayout.addElement( UIElementBuilders.TextBox )
-    .setText('PPS')
+    .setText(ppsPrefix)
     .setFont(( font ) => font
         .setWeight( 'bold' )
     )
@@ -161,8 +163,8 @@ setInterval(() => {
     const fps = 1000 / (frameDelaySum / frameCount)
     const pps = 1000 * pointsAdded / delta
 
-    indicatorFPS.setText(`FPS: ${fps.toFixed(1)}`)
-    indicatorPPS.setText(`PPS: ${pps.toFixed(0)}`)
+    indicatorFPS.setText(`${fpsPrefix}: ${fps.toFixed(1)}`)
+    indicatorPPS.setText(`${ppsPrefix}: ${pps.toFixed(0)}`)
 
     // Reset counters.
     frameDelaySum = 0
