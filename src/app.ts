@@ -1,5 +1,11 @@
-import { lightningChart, DataPatterns, AxisScrollStrategies, emptyFill, emptyTick, UIOrigins, emptyLine, SeriesXYFormatter, LineSeries, UILayoutBuilders, UIDraggingModes, UIElementBuilders, SolidFill, ColorHEX, UIBackgrounds, AxisTickStrategies, SolidLine, ColorRGBA } from "@arction/lcjs"
+import { lightningChart, DataPatterns, AxisScrollStrategies, emptyFill, emptyTick, UIOrigins, emptyLine, SeriesXYFormatter, LineSeries, UILayoutBuilders, UIDraggingModes, UIElementBuilders, SolidFill, ColorHEX, UIBackgrounds, AxisTickStrategies, SolidLine, ColorRGBA, Themes } from "@arction/lcjs"
 import { createProgressiveRandomGenerator } from "@arction/xydata"
+
+// Use theme if provided
+const urlParams = new URLSearchParams(window.location.search);
+let theme = Themes.dark
+if (urlParams.get('theme') == 'light')
+    theme = Themes.light
 
 // Define channels.
 const channels = [
@@ -16,6 +22,7 @@ const channelGap = 0.2
 
 // Create Chart.
 const chart = lightningChart().ChartXY({
+    theme: theme,
     containerId: 'chart-container',
     defaultAxisXTickStrategy: AxisTickStrategies.Numeric
 })
@@ -118,7 +125,7 @@ const indicatorLayout = chart.addUIElement(
     .setDraggingMode( UIDraggingModes.notDraggable )
     // Set dark, tinted Background style.
     .setBackground(( background ) => background
-        .setFillStyle( new SolidFill({ color: ColorHEX('#000').setA(150) }) )
+        .setFillStyle( new SolidFill({ color: theme.chartBackgroundFillStyle.get('color').setA(150) }) )
         .setStrokeStyle( emptyLine )
     )
 // Reposition indicators whenever X Axis scale is changed (to keep position static).
