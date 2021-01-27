@@ -18,7 +18,10 @@ import {
     SolidLine,
     ColorRGBA,
     translatePoint,
-    Themes
+    Themes,
+    UIRectangle,
+    UITextBox,
+    UIElementColumn
 } from "@arction/lcjs"
 import { createProgressiveRandomGenerator } from "@arction/xydata"
 
@@ -143,7 +146,7 @@ const indicatorPos = translatePoint({
 )
 
 // Create indicators for points-per-second and frames-per-second.
-const indicatorLayout = chart.addUIElement(
+const indicatorLayout = chart.addUIElement<UIElementColumn<UIRectangle>>(
     UILayoutBuilders.Column
         .setBackground(UIBackgrounds.Rectangle),
     // Position UIElement with Axis coordinates.
@@ -159,7 +162,7 @@ const indicatorLayout = chart.addUIElement(
     )
 // FPS indicator.
 const fpsPrefix = 'Rendering frames-per-second (FPS)'
-const indicatorFPS = indicatorLayout.addElement(UIElementBuilders.TextBox)
+const indicatorFPS = indicatorLayout.addElement<UITextBox<UIRectangle>>(UIElementBuilders.TextBox)
     .setText(fpsPrefix)
     .setFont((font) => font
         .setWeight('bold')
@@ -167,7 +170,7 @@ const indicatorFPS = indicatorLayout.addElement(UIElementBuilders.TextBox)
 
 // PPS indicator.
 const ppsPrefix = 'Incoming data, at rate of points-per-second (PPS)'
-const indicatorPPS = indicatorLayout.addElement(UIElementBuilders.TextBox)
+const indicatorPPS = indicatorLayout.addElement<UITextBox<UIRectangle>>(UIElementBuilders.TextBox)
     .setText(ppsPrefix)
     .setFont((font) => font
         .setWeight('bold')
