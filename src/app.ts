@@ -70,7 +70,9 @@ const series = channels.map((ch, i) => {
     const series = chart
         .addLineSeries({
             // Specifying progressive DataPattern enables some otherwise unusable optimizations.
-            dataPattern: DataPatterns.horizontalProgressive
+            dataPattern: {
+                pattern: 'ProgressiveX'
+            }
         })
         .setName(ch)
         // Specify data to be cleaned after a buffer of approx. 10 seconds.
@@ -81,13 +83,8 @@ const series = channels.map((ch, i) => {
         .setValue((i + 0.5) * channelHeight + i * channelGap)
         .setTextFormatter(() => ch)
         .setMarker((marker) => marker
-            .setFont((font) => font
+            .setTextFont((font) => font
                 .setWeight('bold')
-            )
-            .setTextFillStyle(new SolidFill())
-            .setBackground((background) => background
-                .setFillStyle(emptyFill)
-                .setStrokeStyle(emptyLine)
             )
         )
         .setGridStrokeStyle(new SolidLine({
@@ -133,15 +130,12 @@ const resultTableFormatter: SeriesXYFormatter = (tableContentBuilder, activeSeri
         // Translate Y coordinate back to [0, 1].
         .addRow('Y', '', activeSeries.axisY.formatValue(y - (seriesIndex * channelHeight + seriesIndex * channelGap)))
 }
-series.forEach((series) => series.setResultTableFormatter(resultTableFormatter))
+series.forEach((series) => series.setCursorResultTableFormatter(resultTableFormatter))
 
 const indicatorPos = translatePoint({
-    x: axisX.scale.getInnerStart(),
-    y: axisY.scale.getInnerEnd()
-}, {
-    x: axisX.scale,
-    y: axisY.scale
-},
+    x: axisX.getInterval().start,
+    y: axisY.getInterval().end
+}, series[0].scale,
     chart.uiScale
 )
 
@@ -164,7 +158,7 @@ const indicatorLayout = chart.addUIElement<UIElementColumn<UIRectangle>>(
 const fpsPrefix = 'Rendering frames-per-second (FPS)'
 const indicatorFPS = indicatorLayout.addElement<UITextBox<UIRectangle>>(UIElementBuilders.TextBox)
     .setText(fpsPrefix)
-    .setFont((font) => font
+    .setTextFont((font) => font
         .setWeight('bold')
     )
 
@@ -172,7 +166,7 @@ const indicatorFPS = indicatorLayout.addElement<UITextBox<UIRectangle>>(UIElemen
 const ppsPrefix = 'Incoming data, at rate of points-per-second (PPS)'
 const indicatorPPS = indicatorLayout.addElement<UITextBox<UIRectangle>>(UIElementBuilders.TextBox)
     .setText(ppsPrefix)
-    .setFont((font) => font
+    .setTextFont((font) => font
         .setWeight('bold')
     )
 
