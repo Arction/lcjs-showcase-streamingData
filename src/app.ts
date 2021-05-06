@@ -1,203 +1,276 @@
 import {
-    lightningChart,
-    DataPatterns,
-    AxisScrollStrategies,
-    emptyFill,
-    emptyTick,
-    UIOrigins,
-    emptyLine,
-    SeriesXYFormatter,
-    LineSeries,
-    UILayoutBuilders,
-    UIDraggingModes,
-    UIElementBuilders,
-    SolidFill,
-    ColorHEX,
-    UIBackgrounds,
-    AxisTickStrategies,
-    SolidLine,
-    ColorRGBA,
-    translatePoint,
-    Themes,
-    UIRectangle,
-    UITextBox,
-    UIElementColumn
-} from "@arction/lcjs"
-import { createProgressiveRandomGenerator } from "@arction/xydata"
+  Themes,
+  lightningChart,
+  AxisScrollStrategies,
+  AxisTickStrategies,
+  SolidLine,
+  SolidFill,
+  ColorHSV,
+  UIElementBuilders,
+  emptyLine,
+  emptyFill,
+  FontSettings,
+} from "@arction/lcjs";
 
 // Use theme if provided
 const urlParams = new URLSearchParams(window.location.search);
-let theme = Themes.dark
-if (urlParams.get('theme') == 'light')
-    theme = Themes.light
+let theme = Themes.dark;
+if (urlParams.get("theme") == "light") theme = Themes.light;
 
-// Define channels.
-const channels = [
-    'Ch 1',
-    'Ch 2',
-    'Ch 3',
-    'Ch 4',
-    'Ch 5'
-]
-// This is more like a guideline (streaming uses JS setInterval, which is not precise). Refer to in-chart PPS indicator for actual value.
-const approxPointsPerSecondChannel = 10000
-const channelHeight = 1.0
-const channelGap = 0.2
+const chart = lightningChart()
+  .ChartXY({
+    theme,
+    container: "chart-container",
+  })
+  .setTitleFillStyle(emptyFill)
+  .setPadding({ top: 32 });
 
-// Create Chart.
-const chart = lightningChart().ChartXY({
-    theme: theme,
-    container: 'chart-container'
-})
-    // Hide title.
-    .setTitleFillStyle(emptyFill)
+const axisX = chart
+  .getDefaultAxisX()
+  .disableAnimations()
+  .setScrollStrategy(AxisScrollStrategies.progressive)
+  .setTitle("Data points per channel");
+const axisY = chart
+  .getDefaultAxisY()
+  .setTickStrategy(AxisTickStrategies.Empty)
+  .setTitle("< Channels >")
+  .disableAnimations()
+  .setScrollStrategy(AxisScrollStrategies.expansion);
 
-// Configurure Axes Scrolling modes.
-const axisX = chart.getDefaultAxisX()
-    // Scroll along with incoming data.
-    .setScrollStrategy(AxisScrollStrategies.progressive)
-    .setInterval(-approxPointsPerSecondChannel, 0)
+const App = (channelCount: number, dataPointsPerSecond: number) => {
+  const xIntervalMax = 60 * dataPointsPerSecond;
 
-const axisY = chart.getDefaultAxisY()
-    // Keep same interval always.
-    .setScrollStrategy(undefined)
-    .setInterval(0, channels.length * channelHeight + (channels.length - 1) * channelGap)
-    // Hide default ticks.
-    .setTickStrategy(AxisTickStrategies.Empty)
+  axisX.setInterval(-xIntervalMax, 0);
+  axisY.setInterval(0, channelCount * 1);
 
-// Create a LineSeries for each "channel".
-const series = channels.map((ch, i) => {
-    const series = chart
-        .addLineSeries({
-            // Specifying progressive DataPattern enables some otherwise unusable optimizations.
-            dataPattern: {
-                pattern: 'ProgressiveX'
-            }
-        })
-        .setName(ch)
-        // Specify data to be cleaned after a buffer of approx. 10 seconds.
-        // Regardless of this value, data has to be out of view to be cleaned in any case.
-        .setMaxPointCount(approxPointsPerSecondChannel * 10)
-    // Add Label to Y-axis that displays the Channel name.
-    axisY.addCustomTick()
-        .setValue((i + 0.5) * channelHeight + i * channelGap)
-        .setTextFormatter(() => ch)
-        .setMarker((marker) => marker
-            .setTextFont((font) => font
-                .setWeight('bold')
-            )
+  // Define Y traces that will be looped indefinitely to create test data set.
+  const normalizeNumberArray = (numbers: number[]) => {
+    const min = numbers.reduce(
+      (prev, cur) => Math.min(prev, cur),
+      Number.MAX_SAFE_INTEGER
+    );
+    const max = numbers.reduce(
+      (prev, cur) => Math.max(prev, cur),
+      -Number.MAX_SAFE_INTEGER
+    );
+    const interval = max - min;
+    return numbers.map((num) => (num - min) / interval);
+  };
+  const signals = [
+    normalizeNumberArray(
+      new Array(Math.ceil((100 * 1000) / 4))
+        .fill(0)
+        .map(
+          (_, x, arr) =>
+            (x * 2) / arr.length +
+            Math.sin((x * 8 * 2 * Math.PI) / arr.length) +
+            Math.random() * 0.01
         )
-        .setGridStrokeStyle(new SolidLine({
-            thickness: 3,
-            fillStyle: new SolidFill({ color: ColorRGBA(255, 125, 0, 80) })
-        }))
-    return series
-})
+    ),
+    normalizeNumberArray(
+      new Array(Math.ceil((100 * 1000) / 2))
+        .fill(0)
+        .map(
+          (_, x, arr) =>
+            (x * 2) / arr.length + Math.sin((x * 8 * 2 * Math.PI) / arr.length)
+        )
+    ),
+    normalizeNumberArray(
+      new Array(Math.ceil((100 * 1000) / 1))
+        .fill(0)
+        .map(
+          (_, x, arr) =>
+            (x * 2) / arr.length + Math.sin((x * 8 * 2 * Math.PI) / arr.length)
+        )
+    ),
+  ];
 
-// Create random progressive data stream using 'xydata' library.
-let pointsAdded = 0
-const randomPointGenerator = createProgressiveRandomGenerator()
-    // Generator will repeat same Y values after every 10k points.
-    .setNumberOfPoints(10 * 1000)
-series.forEach((series, i) => {
-    const streamInterval = 1000 / 60
-    const streamBatchSize = Math.ceil(approxPointsPerSecondChannel / streamInterval)
-    randomPointGenerator
-        .generate()
-        .setStreamRepeat(true)
-        .setStreamBatchSize(streamBatchSize)
-        .setStreamInterval(streamInterval)
-        .toStream()
-        .forEach((point) => {
-            // Increase Y coordinate based on Series index, so that Series aren't on top of each other.
-            point.y += i * channelHeight + i * channelGap
-            series.add(point)
-            pointsAdded++
+  const series = new Array(channelCount).fill(0).map((_, iChannel) => {
+    const nSeries = chart
+      .addLineSeries({
+        dataPattern: {
+          pattern: "ProgressiveX",
+          regularProgressiveStep: true,
+        },
+      })
+      .setName(`Channel #${iChannel + 1}`)
+      .setStrokeStyle(
+        new SolidLine({
+          thickness: 1,
+          fillStyle: new SolidFill({
+            color: ColorHSV(30 * iChannel, 0.7),
+          }),
         })
-})
+      )
+      .setMouseInteractions(false)
+      .setMaxPointCount(xIntervalMax);
 
-// Style AutoCursor.
-chart.setAutoCursor((autoCursor) => autoCursor
-    .setGridStrokeYStyle(emptyLine)
-    .disposeTickMarkerY()
-)
-const resultTableFormatter: SeriesXYFormatter = (tableContentBuilder, activeSeries: LineSeries, x, y) => {
-    const seriesIndex = series.indexOf(activeSeries)
+    return nSeries;
+  });
 
-    return tableContentBuilder
-        .addRow(activeSeries.getName())
-        .addRow('X', '', activeSeries.axisX.formatValue(x))
-        // Translate Y coordinate back to [0, 1].
-        .addRow('Y', '', activeSeries.axisY.formatValue(y - (seriesIndex * channelHeight + seriesIndex * channelGap)))
-}
-series.forEach((series) => series.setCursorResultTableFormatter(resultTableFormatter))
+  const channelLabelFont = new FontSettings({
+    size: channelCount <= 30 ? theme.uiFont.size : 8,
+  });
+  const channelLabels = new Array(channelCount).fill(0).map((_, iChannel) => {
+    return axisY
+      .addCustomTick(UIElementBuilders.AxisTick)
+      .setTextFormatter(() => `Channel #${iChannel + 1}`)
+      .setValue((channelCount - iChannel - 0.5) * 1)
+      .setGridStrokeStyle(emptyLine)
+      .setMarker((marker) => marker.setTextFont(channelLabelFont));
+  });
 
-const indicatorPos = translatePoint({
-    x: axisX.getInterval().start,
-    y: axisY.getInterval().end
-}, series[0].scale,
-    chart.uiScale
-)
+  // Push more data in each frame, while keeping a consistent amount of incoming points according to specified stream rate as Hz.
+  let xPos = 0;
+  const pushNMoreDataPoints = (n: number) => {
+    const seriesNewDataPoints = [];
+    for (let iChannel = 0; iChannel < series.length; iChannel++) {
+      const nSignal = signals[iChannel % signals.length];
+      const newDataPoints = [];
+      for (let iDp = 0; iDp < n; iDp++) {
+        const x = xPos + iDp;
+        const iData = x % nSignal.length;
+        const ySignal = nSignal[iData];
+        const y = (channelCount - iChannel - 1) * 1 + ySignal;
+        const point = { x, y };
+        newDataPoints.push(point);
+      }
+      seriesNewDataPoints[iChannel] = newDataPoints;
+    }
+    xPos += n;
 
-// Create indicators for points-per-second and frames-per-second.
-const indicatorLayout = chart.addUIElement<UIElementColumn<UIRectangle>>(
-    UILayoutBuilders.Column
-        .setBackground(UIBackgrounds.Rectangle),
-    // Position UIElement with Axis coordinates.
-    chart.uiScale
-)
-    .setOrigin(UIOrigins.LeftTop)
-    .setPosition(indicatorPos)
-    .setDraggingMode(UIDraggingModes.notDraggable)
-    // Set dark, tinted Background style.
-    .setBackground((background) => background
-        .setFillStyle(new SolidFill({ color: ColorHEX('#000').setA(150) }))
-        .setStrokeStyle(emptyLine)
-    )
-// FPS indicator.
-const fpsPrefix = 'Rendering frames-per-second (FPS)'
-const indicatorFPS = indicatorLayout.addElement<UITextBox<UIRectangle>>(UIElementBuilders.TextBox)
-    .setText(fpsPrefix)
-    .setTextFont((font) => font
-        .setWeight('bold')
-    )
+    series.forEach((nSeries, iSeries) =>
+      nSeries
+        .add(seriesNewDataPoints[iSeries])
+        .setDataCleaningThreshold(xPos - xIntervalMax)
+    );
 
-// PPS indicator.
-const ppsPrefix = 'Incoming data, at rate of points-per-second (PPS)'
-const indicatorPPS = indicatorLayout.addElement<UITextBox<UIRectangle>>(UIElementBuilders.TextBox)
-    .setText(ppsPrefix)
-    .setTextFont((font) => font
-        .setWeight('bold')
-    )
+    const visibleDataPoints = series.reduce(
+      (prev, cur) => prev + cur.getPointAmount(),
+      0
+    );
+    labelVisibleData.innerHTML =
+      visibleDataPoints < 1000000
+        ? (visibleDataPoints / 1000).toFixed(1) + " k"
+        : (visibleDataPoints / 1000000).toFixed(2) + " M";
+  };
+  let tPrev = performance.now();
+  let newDataModulus = 0;
+  let subAnimationFrame;
+  let longFrameTimeHistory = new Array(50).fill(false);
+  const streamMoreData = () => {
+    const tNow = performance.now();
+    const tDelta = tNow - tPrev;
+    let newDataPointsCount =
+      dataPointsPerSecond * (tDelta / 1000) + newDataModulus;
+
+    longFrameTimeHistory.shift();
+    if (tDelta >= 1000 / 20) {
+      longFrameTimeHistory.push(true);
+    } else {
+      longFrameTimeHistory.push(false);
+    }
+    const longFramesCount = longFrameTimeHistory.reduce(
+      (prev, cur) => prev + (cur === true ? 1 : 0),
+      0
+    );
+
+    newDataModulus = newDataPointsCount % 1;
+    newDataPointsCount = Math.floor(newDataPointsCount);
+
+    if (longFramesCount < 3 || curInputBufferingEnabled === false) {
+      pushNMoreDataPoints(newDataPointsCount);
+      labelInputBuffering.innerHTML = "";
+    } else {
+      labelInputBuffering.innerHTML = "Input buffering active";
+    }
+
+    // Request next frame.
+    tPrev = tNow;
+    subAnimationFrame = requestAnimationFrame(streamMoreData);
+  };
+
+  pushNMoreDataPoints(100 * 1000);
+  subAnimationFrame = requestAnimationFrame(streamMoreData);
+
+  return async () => {
+    series.forEach((series) => series.dispose());
+    channelLabels.forEach((label) => label.dispose());
+    cancelAnimationFrame(subAnimationFrame);
+
+    // Wait a small while if a lot of data was disposed.
+    if (channelCount * dataPointsPerSecond > 300 * 1000) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  };
+};
 
 // Measure FPS.
-let frameCount = 0
-let frameDelaySum = 0
-let framePrevious: number | undefined
-const measureFPS = () => {
-    const now = window.performance.now()
-    frameCount++
-    if (framePrevious)
-        frameDelaySum += now - framePrevious
-    framePrevious = now
-    requestAnimationFrame(measureFPS)
-}
-requestAnimationFrame(measureFPS)
-
-// Update displayed FPS and PPS on regular intervals.
-let displayPrevious = window.performance.now()
+let tStart = Date.now();
+let frames = 0;
+let fps = 0;
+const recordFrame = () => {
+  frames++;
+  const tNow = Date.now();
+  fps = 1000 / ((tNow - tStart) / frames);
+  labelFps.innerHTML =
+    fps && !isNaN(fps) && isFinite(fps) ? fps.toFixed(1) : "";
+  sub_recordFrame = requestAnimationFrame(recordFrame);
+};
+let sub_recordFrame = requestAnimationFrame(recordFrame);
 setInterval(() => {
-    const now = window.performance.now()
-    const delta = now - displayPrevious
-    const fps = 1000 / (frameDelaySum / frameCount)
-    const pps = 1000 * pointsAdded / delta
+  tStart = Date.now();
+  frames = 0;
+}, 5000);
 
-    indicatorFPS.setText(`${fpsPrefix}: ${fps.toFixed(1)}`)
-    indicatorPPS.setText(`${ppsPrefix}: ${pps.toFixed(0)}`)
-
-    // Reset counters.
-    frameDelaySum = 0
-    frameCount = 0
-    pointsAdded = 0
-    displayPrevious = now
-}, 1000)
+const inputChannels = document.getElementById(
+  "input-channels"
+) as HTMLInputElement;
+const inputData = document.getElementById("input-data") as HTMLInputElement;
+const inputBufferingEnabled = document.getElementById(
+  "input-inputBufferingEnabled"
+) as HTMLInputElement;
+const labelFps = document.getElementById("label-fps");
+const labelVisibleData = document.getElementById("label-visibleData");
+const labelInputBuffering = document.getElementById(
+  "label-inputBufferingActive"
+);
+let curChannelCount = 10;
+let curDataPointsPerSecond = 10 * 1000;
+let curInputBufferingEnabled = true;
+inputChannels.value = String(curChannelCount);
+inputData.value = String(curDataPointsPerSecond);
+inputBufferingEnabled.checked = curInputBufferingEnabled;
+inputChannels.onchange = (e) => {
+  try {
+    const channelCount = Math.max(1, Number(inputChannels.value));
+    if (channelCount !== curChannelCount) {
+      curChannelCount = channelCount;
+      refreshApp();
+    }
+  } catch (e) {
+    console.error(e.message);
+  }
+};
+inputData.onchange = (e) => {
+  try {
+    const dataPointsPerSecond = Math.max(0, Number(inputData.value));
+    if (dataPointsPerSecond !== curDataPointsPerSecond) {
+      curDataPointsPerSecond = dataPointsPerSecond;
+      refreshApp();
+    }
+  } catch (e) {
+    console.error(e.message);
+  }
+};
+inputBufferingEnabled.onchange = (e) => {
+  curInputBufferingEnabled = inputBufferingEnabled.checked;
+};
+let resetApp = undefined;
+const refreshApp = async () => {
+  if (resetApp) {
+    await resetApp();
+  }
+  resetApp = App(curChannelCount, curDataPointsPerSecond);
+};
+refreshApp();
