@@ -182,7 +182,7 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
       pushNMoreDataPoints(newDataPointsCount);
       labelInputBuffering.innerHTML = "";
     } else {
-      labelInputBuffering.innerHTML = "Input buffering active";
+      labelInputBuffering.innerHTML = "Active";
     }
 
     // Request next frame.
