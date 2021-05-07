@@ -23,7 +23,27 @@
         }
         .hidden { width: 0px; height: 0px; }
         .grow { transition: all .2s ease-in-out; }
-        .grow:hover { transform: scale(1.2); }</style><script src="polyfill.min.js"></script></head><body><div id="chart-container"></div><a id="github-link" href="https://github.com/Arction/lcjs-showcase-streamingData"><img id="github-link-image" class="grow" src="./GitHub-Mark-White-32px.png"/></a><script>// Hide Github link if we think we are inside an iframe.
+        .grow:hover { transform: scale(1.2); }
+
+        .ui-container {
+          position: fixed;
+          top: 6px;
+          left: 0px;
+          display: flex;
+          flex-direction: row;
+          z-index: 100;
+          color: white;
+        }
+        .input-container {
+          margin-left: 8px;
+          margin-right: 8px;
+          display: flex;
+          flex-direction: row;
+        }
+        span {
+          display: block;
+          margin-right: 8px;
+        }</style><script src="polyfill.min.js"></script></head><body><div id="chart-container"></div><div class="ui-container"><div class="input-container" title="Amount of channels"><span>Channels</span> <input class="input" id="input-channels" style="max-width: 32px"></div><div class="input-container" title="Amount of data points appended to each channel every second"><span>Channel data points per second</span> <input class="input" id="input-data" style="max-width: 64px"></div><div class="input-container" title="Displays live updated refresh rate (how many times chart is updated every second)"><span>Refresh rate</span> <span id="label-fps" style="min-width: 32px;"></span></div><div class="input-container" title="Displays amount of rendered data points. Old data points are dropped automatically."><span>Data points</span> <span id="label-visibleData" style="min-width: 64px;"></span></div><div class="input-container" title="Data input is automatically stopped when long frame times are detected"><span>Input buffering enabled</span> <input type="checkbox" id="input-inputBufferingEnabled"><span id="label-inputBufferingActive"></span></div></div><a id="github-link" href="https://github.com/Arction/lcjs-showcase-streamingData"><img id="github-link-image" class="grow" src="./GitHub-Mark-White-32px.png"/></a><script>// Hide Github link if we think we are inside an iframe.
         if ( window !== window.top ) {
             // Inside iframe.
             const githubLinkImage = document.getElementById( 'github-link-image' )
