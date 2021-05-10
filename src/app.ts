@@ -15,7 +15,11 @@ import {
 // Use theme if provided
 const urlParams = new URLSearchParams(window.location.search);
 let theme = Themes.dark;
-if (urlParams.get("theme") == "light") theme = Themes.light;
+if (urlParams.get("theme") == "light") {
+  theme = Themes.light;
+  const uiContainer = document.getElementsByClassName('ui-container')[0] as HTMLDivElement;
+  uiContainer.style.color = 'black';
+}
 
 const chart = lightningChart()
   .ChartXY({
