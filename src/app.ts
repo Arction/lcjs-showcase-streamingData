@@ -14,9 +14,9 @@ import {
 
 // Use theme if provided
 const urlParams = new URLSearchParams(window.location.search);
-let theme = Themes.dark;
+let theme = Themes.darkGold;
 if (urlParams.get("theme") == "light") {
-  theme = Themes.light;
+  theme = Themes.lightNew;
   const uiContainer = document.getElementsByClassName('ui-container')[0] as HTMLDivElement;
   uiContainer.style.color = 'black';
 }
@@ -60,6 +60,7 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
     const interval = max - min;
     return numbers.map((num) => (num - min) / interval);
   };
+
   const signals = [
     normalizeNumberArray(
       new Array(Math.ceil((100 * 1000) / 4))
@@ -98,16 +99,11 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
         },
       })
       .setName(`Channel #${iChannel + 1}`)
-      .setStrokeStyle(
-        new SolidLine({
-          thickness: 1,
-          fillStyle: new SolidFill({
-            color: ColorHSV(30 * iChannel, 0.7),
-          }),
-        })
-      )
+      .setStrokeStyle(stroke => stroke.setThickness(1))
       .setMouseInteractions(false)
-      .setMaxPointCount(xIntervalMax);
+      .setDataCleaning({
+        minDataPointCount: xIntervalMax
+      });
 
     return nSeries;
   });
@@ -146,7 +142,6 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
     series.forEach((nSeries, iSeries) =>
       nSeries
         .add(seriesNewDataPoints[iSeries])
-        .setDataCleaningThreshold(xPos - xIntervalMax)
     );
 
     const visibleDataPoints = series.reduce(
