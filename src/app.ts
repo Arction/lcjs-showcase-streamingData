@@ -11,32 +11,18 @@ import {
 
 // Use theme if provided
 const urlParams = new URLSearchParams(window.location.search);
-let theme = Themes.darkGold;
+let theme = Themes[urlParams.get("theme")] || Themes.darkGold;
 if (urlParams.get("theme") == "light") {
   theme = Themes.lightNew;
   const uiContainer = document.getElementsByClassName('ui-container')[0] as HTMLDivElement;
   uiContainer.style.color = 'black';
-}else if(urlParams.get("theme") == "lightNature"){
-  theme = Themes.lightNature;
-  const uiContainer = document.getElementsByClassName('ui-container')[0] as HTMLDivElement;
-  uiContainer.style.color = 'black';
-}else if(urlParams.get("theme") == "cyberSpace"){
-  theme = Themes.cyberSpace;
-  const uiContainer = document.getElementsByClassName('ui-container')[0] as HTMLDivElement;
-  uiContainer.style.color = 'black';
-}else if(urlParams.get("theme") == "turquoiseHexagon "){
-  theme = Themes.turquoiseHexagon;
-  const uiContainer = document.getElementsByClassName('ui-container')[0] as HTMLDivElement;
-  uiContainer.style.color = 'black';
 }
-
 
 const chart = lightningChart()
   .ChartXY({
     theme,
     container: "chart-container",
   })
-  .setTitlePosition('series-center-bottom')
   .setTitleFillStyle(emptyFill)
   .setPadding({ top: 32 });
 
