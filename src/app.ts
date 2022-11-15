@@ -11,7 +11,7 @@ import {
 
 // Use theme if provided
 const urlParams = new URLSearchParams(window.location.search);
-let theme = Themes.darkGold;
+let theme = Themes[urlParams.get("theme")] || Themes.darkGold;
 if (urlParams.get("theme") == "light") {
   theme = Themes.light;
   const uiContainer = document.getElementsByClassName('ui-container')[0] as HTMLDivElement;
