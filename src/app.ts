@@ -13,7 +13,7 @@ import {
 const urlParams = new URLSearchParams(window.location.search);
 let theme = Themes.darkGold;
 if (urlParams.get("theme") == "light") {
-  theme = Themes.lightNew;
+  theme = Themes.light;
   const uiContainer = document.getElementsByClassName('ui-container')[0] as HTMLDivElement;
   uiContainer.style.color = 'black';
 }
@@ -106,11 +106,11 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
   });
 
   const channelLabelFont = new FontSettings({
-    size: channelCount <= 30 ? theme.uiFont.size : 8,
+    size: channelCount <= 30 ? 14 : 8,
   });
   const channelLabels = new Array(channelCount).fill(0).map((_, iChannel) => {
     return axisY
-      .addCustomTick(UIElementBuilders.AxisTick)
+      .addCustomTick(UIElementBuilders.AxisTickMajor)
       .setTextFormatter(() => `Channel #${iChannel + 1}`)
       .setValue((channelCount - iChannel - 0.5) * 1)
       .setGridStrokeStyle(emptyLine)
