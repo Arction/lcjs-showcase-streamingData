@@ -11,11 +11,12 @@ import {
 
 // Use theme if provided
 const urlParams = new URLSearchParams(window.location.search);
-let theme = Themes[urlParams.get("theme")] || Themes.darkGold;
-if (urlParams.get("theme") == "light") {
-  theme = Themes.light;
-  const uiContainer = document.getElementsByClassName('ui-container')[0] as HTMLDivElement;
-  uiContainer.style.color = 'black';
+let theme = Themes[urlParams.get("theme") as keyof Themes] || Themes.darkGold;
+if (!theme.isDark) {
+  const uiContainer = document.getElementsByClassName(
+    "ui-container"
+  )[0] as HTMLDivElement;
+  uiContainer.style.color = "black";
 }
 
 const chart = lightningChart()
@@ -96,10 +97,10 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
         },
       })
       .setName(`Channel #${iChannel + 1}`)
-      .setStrokeStyle(stroke => stroke.setThickness(1))
+      .setStrokeStyle((stroke) => stroke.setThickness(1))
       .setMouseInteractions(false)
       .setDataCleaning({
-        minDataPointCount: xIntervalMax
+        minDataPointCount: xIntervalMax,
       });
 
     return nSeries;
@@ -137,8 +138,7 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
     xPos += n;
 
     series.forEach((nSeries, iSeries) =>
-      nSeries
-        .add(seriesNewDataPoints[iSeries])
+      nSeries.add(seriesNewDataPoints[iSeries])
     );
 
     const visibleDataPoints = series.reduce(
@@ -153,33 +153,17 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
   let tPrev = performance.now();
   let newDataModulus = 0;
   let subAnimationFrame;
-  let longFrameTimeHistory = new Array(50).fill(false);
   const streamMoreData = () => {
     const tNow = performance.now();
-    const tDelta = tNow - tPrev;
+    // Prevent delta from being more than 1 s. This would happen when user switches tab for some time, etc.
+    const tDelta = Math.min(tNow - tPrev, 1000);
     let newDataPointsCount =
       dataPointsPerSecond * (tDelta / 1000) + newDataModulus;
-
-    longFrameTimeHistory.shift();
-    if (tDelta >= 1000 / 20) {
-      longFrameTimeHistory.push(true);
-    } else {
-      longFrameTimeHistory.push(false);
-    }
-    const longFramesCount = longFrameTimeHistory.reduce(
-      (prev, cur) => prev + (cur === true ? 1 : 0),
-      0
-    );
 
     newDataModulus = newDataPointsCount % 1;
     newDataPointsCount = Math.floor(newDataPointsCount);
 
-    if (longFramesCount < 3 || curInputBufferingEnabled === false) {
-      pushNMoreDataPoints(newDataPointsCount);
-      labelInputBuffering.innerHTML = "";
-    } else {
-      labelInputBuffering.innerHTML = "Active";
-    }
+    pushNMoreDataPoints(newDataPointsCount);
 
     // Request next frame.
     tPrev = tNow;
@@ -223,20 +207,12 @@ const inputChannels = document.getElementById(
   "input-channels"
 ) as HTMLInputElement;
 const inputData = document.getElementById("input-data") as HTMLInputElement;
-const inputBufferingEnabled = document.getElementById(
-  "input-inputBufferingEnabled"
-) as HTMLInputElement;
 const labelFps = document.getElementById("label-fps");
 const labelVisibleData = document.getElementById("label-visibleData");
-const labelInputBuffering = document.getElementById(
-  "label-inputBufferingActive"
-);
 let curChannelCount = 10;
 let curDataPointsPerSecond = 10 * 1000;
-let curInputBufferingEnabled = true;
 inputChannels.value = String(curChannelCount);
 inputData.value = String(curDataPointsPerSecond);
-inputBufferingEnabled.checked = curInputBufferingEnabled;
 inputChannels.onchange = (e) => {
   try {
     const channelCount = Math.max(1, Number(inputChannels.value));
@@ -258,9 +234,6 @@ inputData.onchange = (e) => {
   } catch (e) {
     console.error(e.message);
   }
-};
-inputBufferingEnabled.onchange = (e) => {
-  curInputBufferingEnabled = inputBufferingEnabled.checked;
 };
 let resetApp = undefined;
 const refreshApp = async () => {
