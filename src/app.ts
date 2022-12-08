@@ -42,8 +42,8 @@ const axisY = chart
 const App = (channelCount: number, dataPointsPerSecond: number) => {
   const xIntervalMax = 60 * dataPointsPerSecond;
 
-  axisX.setInterval(-xIntervalMax, 0);
-  axisY.setInterval(0, channelCount * 1);
+  axisX.setInterval({ start: -xIntervalMax, end: 0, stopAxisAfter: false });
+  axisY.setInterval({ start: 0, end: channelCount * 1, stopAxisAfter: false });
 
   // Define Y traces that will be looped indefinitely to create test data set.
   const normalizeNumberArray = (numbers: number[]) => {
