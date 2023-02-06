@@ -27,14 +27,14 @@ const chart = lightningChart()
 
 const axisX = chart
     .getDefaultAxisX()
-    .disableAnimations()
+    .setAnimationScroll(false)
     .setScrollStrategy(AxisScrollStrategies.progressive)
     .setTitle('Data points per channel')
 const axisY = chart
     .getDefaultAxisY()
     .setTickStrategy(AxisTickStrategies.Empty)
     .setTitle('< Channels >')
-    .disableAnimations()
+    .setAnimationScroll(false)
     .setScrollStrategy(AxisScrollStrategies.expansion)
 
 const App = (channelCount: number, dataPointsPerSecond: number) => {
