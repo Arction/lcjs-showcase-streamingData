@@ -17,7 +17,7 @@ if (!theme.isDark) {
     uiContainer.style.color = 'black'
 }
 
-const chart = lightningChart()
+const chart = lightningChart({ resourcesBaseUrl: `${window.location.origin}${window.location.pathname}resources` })
     .ChartXY({
         theme,
         container: 'chart-container',
