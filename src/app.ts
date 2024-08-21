@@ -7,7 +7,8 @@ import {
     emptyLine,
     emptyFill,
     FontSettings,
-} from '@arction/lcjs'
+    disableThemeEffects,
+} from '@lightningchart/lcjs'
 
 // Use theme if provided
 const urlParams = new URLSearchParams(window.location.search)
@@ -17,9 +18,11 @@ if (!theme.isDark) {
     uiContainer.style.color = 'black'
 }
 
-const chart = lightningChart({ resourcesBaseUrl: `${window.location.origin}${window.location.pathname}resources` })
+const chart = lightningChart({
+    resourcesBaseUrl: `${window.location.origin}${window.location.pathname}resources`,
+})
     .ChartXY({
-        theme,
+        theme: disableThemeEffects(theme),
         container: 'chart-container',
     })
     .setTitleFillStyle(emptyFill)
@@ -30,18 +33,31 @@ const axisX = chart
     .setAnimationScroll(false)
     .setScrollStrategy(AxisScrollStrategies.progressive)
     .setTitle('Data points per channel')
-const axisY = chart
-    .getDefaultAxisY()
-    .setTickStrategy(AxisTickStrategies.Empty)
-    .setTitle('< Channels >')
-    .setAnimationScroll(false)
-    .setScrollStrategy(AxisScrollStrategies.expansion)
+
+chart.axisY.dispose()
 
 const App = (channelCount: number, dataPointsPerSecond: number) => {
     const xIntervalMax = 60 * dataPointsPerSecond
-
     axisX.setInterval({ start: -xIntervalMax, end: 0, stopAxisAfter: false })
-    axisY.setInterval({ start: 0, end: channelCount * 1, stopAxisAfter: false })
+    const channelLabelFont = new FontSettings({
+        size: channelCount <= 30 ? 14 : 8,
+    })
+    chart.setCursorMode(channelCount <= 10 ? 'show-all-interpolated' : undefined)
+    const channels = new Array(channelCount).fill(0).map((_, i) => {
+        const axisY = chart
+            .addAxisY({ iStack: -i })
+            .setTitleFont(channelLabelFont)
+            .setTitle(`Channel #${i + 1}`)
+            .setTitleRotation(0)
+            .setTickStrategy(AxisTickStrategies.Empty)
+            .setStrokeStyle(emptyLine)
+        const series = chart
+            .addPointLineAreaSeries({ dataPattern: 'ProgressiveX', axisY })
+            .setName(`Channel #${i + 1}`)
+            .setStrokeStyle((stroke) => stroke.setThickness(1))
+            .setMaxSampleCount(Math.ceil(xIntervalMax))
+        return { axisY, series }
+    })
 
     // Define Y traces that will be looped indefinitely to create test data set.
     const normalizeNumberArray = (numbers: number[]) => {
@@ -50,7 +66,6 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
         const interval = max - min
         return numbers.map((num) => (num - min) / interval)
     }
-
     const signals = [
         normalizeNumberArray(
             new Array(Math.ceil((100 * 1000) / 4))
@@ -69,58 +84,34 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
         ),
     ]
 
-    const series = new Array(channelCount).fill(0).map((_, iChannel) => {
-        const nSeries = chart
-            .addLineSeries({
-                dataPattern: {
-                    pattern: 'ProgressiveX',
-                    regularProgressiveStep: true,
-                },
-            })
-            .setName(`Channel #${iChannel + 1}`)
-            .setStrokeStyle((stroke) => stroke.setThickness(1))
-            .setMouseInteractions(false)
-            .setDataCleaning({
-                minDataPointCount: xIntervalMax,
-            })
-
-        return nSeries
-    })
-
-    const channelLabelFont = new FontSettings({
-        size: channelCount <= 30 ? 14 : 8,
-    })
-    const channelLabels = new Array(channelCount).fill(0).map((_, iChannel) => {
-        return axisY
-            .addCustomTick(UIElementBuilders.AxisTickMajor)
-            .setTextFormatter(() => `Channel #${iChannel + 1}`)
-            .setValue((channelCount - iChannel - 0.5) * 1)
-            .setGridStrokeStyle(emptyLine)
-            .setMarker((marker) => marker.setTextFont(channelLabelFont))
-    })
-
     // Push more data in each frame, while keeping a consistent amount of incoming points according to specified stream rate as Hz.
     let xPos = 0
     const pushNMoreDataPoints = (n: number) => {
-        const seriesNewDataPoints = []
-        for (let iChannel = 0; iChannel < series.length; iChannel++) {
+        const xs = new Float64Array(n)
+        const allYs = []
+        for (let iChannel = 0; iChannel < channels.length; iChannel++) {
             const nSignal = signals[iChannel % signals.length]
-            const newDataPoints = []
+            const ys = new Float64Array(n)
+            allYs.push(ys)
             for (let iDp = 0; iDp < n; iDp++) {
                 const x = xPos + iDp
                 const iData = x % nSignal.length
                 const ySignal = nSignal[iData]
                 const y = (channelCount - iChannel - 1) * 1 + ySignal
-                const point = { x, y }
-                newDataPoints.push(point)
+                if (iChannel === 0) xs[iDp] = x
+                ys[iDp] = y
             }
-            seriesNewDataPoints[iChannel] = newDataPoints
         }
         xPos += n
 
-        series.forEach((nSeries, iSeries) => nSeries.add(seriesNewDataPoints[iSeries]))
+        channels.forEach((ch, i) =>
+            ch.series.appendSamples({
+                xValues: xs,
+                yValues: allYs[i],
+            }),
+        )
 
-        const visibleDataPoints = series.reduce((prev, cur) => prev + cur.getPointAmount(), 0)
+        const visibleDataPoints = channels.reduce((prev, cur) => prev + cur.series.getSampleCount(), 0)
         labelVisibleData.innerHTML =
             visibleDataPoints < 1000000 ? (visibleDataPoints / 1000).toFixed(1) + ' k' : (visibleDataPoints / 1000000).toFixed(2) + ' M'
     }
@@ -147,8 +138,10 @@ const App = (channelCount: number, dataPointsPerSecond: number) => {
     subAnimationFrame = requestAnimationFrame(streamMoreData)
 
     return async () => {
-        series.forEach((series) => series.dispose())
-        channelLabels.forEach((label) => label.dispose())
+        channels.forEach((ch) => {
+            ch.axisY.dispose()
+            ch.series.dispose()
+        })
         cancelAnimationFrame(subAnimationFrame)
 
         // Wait a small while if a lot of data was disposed.
